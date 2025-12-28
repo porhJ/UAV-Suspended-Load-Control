@@ -1,8 +1,7 @@
 import numpy as np
-from scipy.linalg import solve_continuous_are
 
 
-class PackagingDroneSimple:
+class PackageDroneIdealDynamics:
     def __init__(self, m_d, m_p, Id_cm, r_d, l, x_ref_, u_ref_, g=9.8):
         self.m_d = m_d
         self.Id_cm = Id_cm
@@ -105,19 +104,3 @@ class PackagingDroneSimple:
         delta_dx_ = A @ delta_x_ + B @ delta_u_
         dx_ = self.dx_ref_ + delta_dx_
         return dx_
-
-    def control_law(self, x_, int_, kr_, ki_):
-        error_x = (x_ - self.x_ref_).reshape(-1, 1)
-        error_int = int_.reshape(-1, 1)
-        delta_u = -kr_ @ error_x + ki_ @ error_int
-        return self.u_ref_ + delta_u
-
-    def get_kr_(self, A, B, Q, R):
-        P = solve_continuous_are(A, B, Q, R)
-        return np.linalg.inv(R) @ B.T @ P
-
-    def step(self, x_, kr_, ki_, A, B, int_, dt=1.0e-3):
-        int_ += (self.x_ref_ - x_) * dt
-        u_ = self.control_law(x_, int_, kr_, ki_)
-        dx_ = self.dynamics(x_, u_)
-        return x_ + dx_ * dt, int_
