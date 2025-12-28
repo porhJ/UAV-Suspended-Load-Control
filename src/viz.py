@@ -1,62 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
-from main import PackagingDroneSimple
-
-m_d = 5
-m_p = 2
-M = m_d + m_p
-g = 9.8
-r_d = 0.5
-Id_cm = 1 / 12 * m_d * (2 * r_d) ** 2
-l = 1.5
-x_ref = 10
-z_ref = 5
-x_ref_ = np.array([x_ref, 0, z_ref, 0, 0.5 * np.pi, 0, 0, 0])
-u_ref_ = np.array([[0.5 * M * g, 0.5 * M * g]])
-u_ref_ = u_ref_.T
-Ki = np.array([[1.0, 0, 5, 0, 0, 0, 0, 0], [1.0, 0, 5, 0, 0, 0, 0, 0]])
-int_ = 0
-int_ = 0
-t_terminate = 0
-Q = np.diag([20, 1, 5, 1, 50, 1, 50, 1])
-R = np.diag([0.1, 0.1])
-
-pkgDroneSys = PackagingDroneSimple(m_d, m_p, Id_cm, r_d, l, x_ref_, u_ref_)
-A, B = pkgDroneSys.get_jacobian()
-Kr = pkgDroneSys.get_kr_(A, B, Q, R)
-x_ = np.array([0, 0, 2, 0, np.pi - 1.0e-3, 0, 0 + 1.0e-3, 0])
-
-
-# main loop
-int_ = np.zeros_like(x_)
-steps = 30000
-hist = []
-x_hist = []
-dx_hist = []
-z_hist = []
-dz_hist = []
-theta_d_hist = []
-dtheta_d_hist = []
-theta_p_hist = []
-dtheta_p_hist = []
-t_terminate = 0
-for step in range(steps):
-    x_, int_ = pkgDroneSys.step(x_, Kr, Ki, A, B, int_)
-    hist.append(x_)
-    x, dx, z, dz, theta_d, dtheta_d, theta_p, dtheta_p = x_
-    theta_d = np.arctan2(np.sin(theta_d), np.cos(theta_d))
-    theta_p = np.arctan2(np.sin(theta_p), np.cos(theta_p))
-    x_hist.append(x)
-    dx_hist.append(dx)
-    z_hist.append(z)
-    dz_hist.append(dz)
-    theta_d_hist.append(theta_d)
-    dtheta_d_hist.append(dtheta_d)
-    theta_p_hist.append(theta_p)
-    dtheta_p_hist.append(dtheta_p)
-    if abs(x - x_ref) < 0.001 and abs(z - z_ref) < 0.001 and t_terminate == 0:
-        t_terminate = step
+from matplotlib import animation
+from matplotlib.patches import Rectangle
+from matplotlib.transforms import Affine2D
 
 
 def plot_drone_LQR(states, t_terminate, Q, R):
@@ -87,20 +33,76 @@ def plot_drone_LQR(states, t_terminate, Q, R):
     plt.show()
 
 
-states_hist = [
-    x_hist,
-    dx_hist,
-    z_hist,
-    dz_hist,
-    theta_d_hist,
-    dtheta_d_hist,
-    theta_p_hist,
-    dtheta_p_hist,
-]
-states_name = ["x", "dx", "z", "dz", "theta_d", "dtheta_d", "theta_p", "dtheta_p"]
-states = {}
-n = len(states_hist)
-for i in range(n):
-    states[f"{states_name[i]}"] = [states_hist[i], x_ref_[i]]
+class DronePoleAnimator:
+    def __init__(
+        self,
+        hist,
+        pole_length,
+        drone_width=0.6,
+        drone_height=0.1,
+        xlim=(-2, 20),
+        ylim=(-1, 20),
+        frame_step=10,
+        interval=20,
+    ):
+        self.hist = hist
+        self.l = pole_length
+        self.drone_width = drone_width
+        self.drone_height = drone_height
+        self.frame_step = frame_step
+        self.interval = interval
 
-plot_drone_LQR(states, t_terminate, Q, R)
+        self.fig, self.ax = plt.subplots()
+        self.ax.set_xlim(*xlim)
+        self.ax.set_ylim(*ylim)
+        self.ax.set_aspect("equal")
+        self.ax.grid()
+
+        self.drone = Rectangle((0, 0), drone_width, drone_height, fc="black")
+        (self.pole,) = self.ax.plot([], [], lw=2)
+        self.ax.add_patch(self.drone)
+
+    def init(self):
+        self.drone.set_xy((-self.drone_width / 2, -self.drone_height / 2))
+        self.pole.set_data([], [])
+        return self.drone, self.pole
+
+    def update(self, i):
+        x, _, z, _, theta_d, _, theta_p, _ = self.hist[i]
+
+        # camera follow
+        """
+        W = 4.0
+        H = 4.0
+        self.ax.set_xlim(x - W / 2, x + W / 2)
+        self.ax.set_ylim(z - H / 2, z + H / 2)
+        """
+        # --- Drone transform (rotate about CENTER) ---
+        t = (
+            Affine2D().rotate_around(x, z, theta_d - np.pi / 2)  # radians OK here
+            + self.ax.transData
+        )
+
+        self.drone.set_transform(t)
+        self.drone.set_xy((x - self.drone_width / 2, z - self.drone_height / 2))
+
+        # --- Pole geometry (unchanged, correct) ---
+        px = x + self.l * np.sin(theta_p)
+        pz = z - self.l * np.cos(theta_p)
+        self.pole.set_data([x, px], [z, pz])
+
+        return self.drone, self.pole
+
+    def animate(self):
+        self.ani = animation.FuncAnimation(
+            self.fig,
+            self.update,
+            frames=range(0, len(self.hist), self.frame_step),
+            init_func=self.init,
+            interval=self.interval,
+            blit=True,
+        )
+        return self.ani
+
+    def show(self):
+        plt.show()
