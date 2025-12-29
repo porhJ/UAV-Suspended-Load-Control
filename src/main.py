@@ -22,7 +22,7 @@ Ki = np.array([[5, 0, 5, 0, 0, 0, 0, 0], [5, 0, 5, 0, 0, 0, 0, 0]])
 int_ = 0
 int_ = 0
 t_terminate = 0
-Q = np.diag([40, 20, 50, 20, 100, 50, 100, 50])
+Q = np.diag([40, 20, 50, 20, 50, 100, 100, 100])
 R = np.diag([0.1, 0.1])
 
 systemDynamics = PackageDroneIdealDynamics(m_d, m_p, Id_cm, r_d, l, x_ref_, u_ref_)
