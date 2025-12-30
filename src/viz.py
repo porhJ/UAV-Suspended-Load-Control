@@ -1,19 +1,25 @@
+from turtle import color
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import animation
-from matplotlib.patches import Polygon, Rectangle
-from matplotlib.transforms import Affine2D
+from matplotlib.patches import Polygon
 
 
 def plot_drone_LQR(states, t_terminate, Q, R):
     fig, ax = plt.subplots(figsize=(12, 8))
     for state_name, state in states.items():
         state_hist, state_eq = state
-        plt.plot(state_hist, label=f"{state_name}")
+        line_style = "-"
+        if state_name.endswith("_hat"):
+            line_style = "-."
+        plt.plot(state_hist, line_style, label=f"{state_name}")
+        """
         plt.axhline(
             y=state_eq, linestyle="--", label=f"{state_name} equilibrium at {state_eq}"
         )
-    plt.title("Inverted Pendulum LQR-Control")
+        """
+    plt.title("Slung Load Drone System LQR-Control")
     plt.axvline(
         x=t_terminate,
         color="g",
@@ -30,6 +36,25 @@ def plot_drone_LQR(states, t_terminate, Q, R):
         0.5, 0.01, f"Q = diag({Q_vals})  R = diag({R_vals})", ha="center", fontsize=10
     )
     plt.subplots_adjust(right=0.75, bottom=0.15)
+    plt.show()
+
+
+def plot_drone_path(x, y, x_ref, y_ref):
+    plt.plot(x, y, "-o", markersize=0.5)
+    plt.xlabel("x")
+    plt.ylabel("z")
+    plt.axis("equal")
+    plt.axhline(y=y_ref, linestyle="--")
+    plt.axvline(x=x_ref, linestyle="--")
+    plt.scatter(x[-1], y[-1], color="r")
+    plt.figtext(
+        0.5,
+        0.01,
+        f"Start@ ({x[0]}, {y[0]}), End@ ({x[-1]}, {y[-1]})",
+        ha="center",
+        fontsize=10,
+    )
+    plt.title("Path of the drone")
     plt.show()
 
 

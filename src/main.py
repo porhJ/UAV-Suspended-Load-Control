@@ -1,8 +1,9 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
 from controller import lqr_controller
 from dynamics import PackageDroneIdealDynamics
-from viz import DronePoleAnimator, plot_drone_LQR
+from viz import DronePoleAnimator, plot_drone_LQR, plot_drone_path
 
 m_d = 5
 m_p = 2
@@ -16,7 +17,7 @@ z_ref = 5
 x_ref_ = np.array([x_ref, 0, z_ref, 0, 0.5 * np.pi, 0, 0, 0])
 u_ref_ = np.array([[0.5 * M * g, 0.5 * M * g]])
 u_ref_ = u_ref_.T
-Ki = np.array([[5, 0, 5, 0, 5, 0, 5, 0], [5, 0, 5, 0, 5, 0, 5, 0]])
+Ki = np.array([[5, 0, 5, 0, 0, 0, 0, 0], [5, 0, 5, 0, 0, 0, 0, 0]])
 int_ = 0
 int_ = 0
 t_terminate = 0
@@ -29,6 +30,7 @@ C = np.array(
     [
         [1, 0, 0, 0, 0, 0, 0, 0],  # sensor for x
         [0, 0, 1, 0, 0, 0, 0, 0],  # sensor for z
+        [0, 0, 0, 0, 1, 0, 0, 0],  # imu
     ]
 )
 # if using C = [1, 0, 1, 0, 0, 0, 0, 0], it implies that it is one sensor that can measure both x and z, the rank will be insufficient.
@@ -42,8 +44,7 @@ x_hat_ = np.array(
 )  # initial estmated x
 P = np.eye(8) * 0.1
 Q_noise = np.eye(8) * 0.001
-R_noise = np.array([[0.1, 0.1], [0.1, 0.1]])
-
+R_noise = np.diag([0.1, 0.1, 0.01])
 # main loop
 int_ = np.zeros_like(x_)
 steps = 20000
@@ -60,6 +61,7 @@ x_hat_hist = []
 z_hat_hist = []
 theta_d_hat_hist = []
 theta_p_hat_hist = []
+path = []
 t_terminate = 0
 dt = 1.0e-3
 for step in range(steps):
@@ -76,10 +78,10 @@ for step in range(steps):
     # simulation
     dx_ = systemDynamics.dynamics(x_, u_)
     x_ += dx_ * dt
-    x_ += np.random.normal(0, 0.0001, size=8)  # some gust ig idk
+    x_ += np.random.normal(0, 0.001, size=8)  # some gust ig idk
 
     # measure
-    y_ = C @ x_ + np.random.normal(0, 0.001, size=2)
+    y_ = C @ x_ + np.random.normal(0, 0.001, size=3)
     y_err_ = y_ - (C @ x_hat_pred_)
     S = C @ P_pred @ C.T + R_noise
     Kf = P_pred @ C.T @ np.linalg.solve(S, np.eye(len(S)))
@@ -106,6 +108,7 @@ for step in range(steps):
     dtheta_d_hist.append(dtheta_d)
     theta_p_hist.append(theta_p)
     dtheta_p_hist.append(dtheta_p)
+    path.append([x, z])
     if abs(x - x_ref) < 0.001 and abs(z - z_ref) < 0.001 and t_terminate == 0:
         t_terminate = step
 
@@ -135,6 +138,8 @@ for i in range(n):
     states[f"{states_name[i]}"] = [states_hist[i], 0]
 
 plot_drone_LQR(states, t_terminate, Q, R)
+
+plot_drone_path(x_hist, z_hist, x_ref, z_ref)
 
 animator = DronePoleAnimator(hist, pole_length=systemDynamics.l)
 ani = animator.animate()
