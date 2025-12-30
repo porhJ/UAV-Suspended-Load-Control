@@ -77,26 +77,26 @@ class PackageDroneIdealDynamics:
         # we gonna return dx_
         return np.array([dx, ddx, dz, ddz, dtheta_d, ddtheta_d, dtheta_p, ddtheta_p])
 
-    def get_jacobian(self, eps=1e-6):
-        n = len(self.x_ref_)
+    def get_jacobian(self, x_, u, eps=1e-6):
+        n = len(x_)
         m = 2
-        A = np.zeros((n, n))
+        Df_Dx = np.zeros((n, n))
         B = np.zeros((n, m))
-        f0 = self.dynamics(self.x_ref_, self.u_ref_)
+        f0 = self.dynamics(x_, u)
 
         for i in range(n):
-            y_perturb = self.x_ref_.copy()
+            y_perturb = x_.copy()
             y_perturb[i] += eps
-            f_perturb = self.dynamics(y_perturb, self.u_ref_)
-            A[:, i] = (f_perturb - f0) / eps
+            f_perturb = self.dynamics(y_perturb, u)
+            Df_Dx[:, i] = (f_perturb - f0) / eps
 
         for j in range(m):
             u_perturb = self.u_ref_.copy()
             u_perturb[j] += eps
-            f_perturb_u = self.dynamics(self.x_ref_, u_perturb)
+            f_perturb_u = self.dynamics(x_, u_perturb)
             B[:, j] = (f_perturb_u - f0) / eps
 
-        return A, B
+        return Df_Dx, B
 
     def linearized_dynamics(self, x_, u_, A, B):
         delta_x_ = x_ - self.x_ref_
