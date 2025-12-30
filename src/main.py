@@ -46,7 +46,7 @@ R_noise = np.array([[0.1, 0.1], [0.1, 0.1]])
 
 # main loop
 int_ = np.zeros_like(x_)
-steps = 30000
+steps = 20000
 hist = []
 x_hist = []
 dx_hist = []
@@ -76,10 +76,10 @@ for step in range(steps):
     # simulation
     dx_ = systemDynamics.dynamics(x_, u_)
     x_ += dx_ * dt
-    x_ += np.random.normal(0, 0.01, size=8)  # some gust ig idk
+    x_ += np.random.normal(0, 0.0001, size=8)  # some gust ig idk
 
     # measure
-    y_ = C @ x_ + np.random.normal(0, 0.1, size=2)
+    y_ = C @ x_ + np.random.normal(0, 0.001, size=2)
     y_err_ = y_ - (C @ x_hat_pred_)
     S = C @ P_pred @ C.T + R_noise
     Kf = P_pred @ C.T @ np.linalg.solve(S, np.eye(len(S)))
@@ -87,7 +87,7 @@ for step in range(steps):
     x_hat_ = x_hat_pred_ + Kf @ y_err_
     P = (np.eye(8) - Kf @ C) @ P_pred
 
-    hist.append(x_)
+    hist.append(x_.copy())
     x, dx, z, dz, theta_d, dtheta_d, theta_p, dtheta_p = x_
     x_hat, _, z_hat, _, theta_d_hat, _, theta_p_hat, _ = x_hat_
     theta_d_hat = np.arctan2(np.sin(theta_d_hat), np.cos(theta_d_hat))
