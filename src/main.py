@@ -3,8 +3,9 @@ import numpy as np
 
 from controller import lqr_controller
 from dynamics import PackageDroneIdealDynamics
-from viz import DronePoleAnimator, plot_drone_LQR, plot_drone_path
+from viz import DronePoleAnimator, plot_drone_path, plot_state_history
 
+# initializing stuffs
 m_d = 5
 m_p = 2
 M = m_d + m_p
@@ -33,7 +34,8 @@ C = np.array(
         [0, 0, 0, 0, 1, 0, 0, 0],  # imu
     ]
 )
-# if using C = [1, 0, 1, 0, 0, 0, 0, 0], it implies that it is one sensor that can measure both x and z, the rank will be insufficient.
+# if using C = [1, 0, 1, 0, 0, 0, 0, 0], it implies =Nonethat it is one sensor that can measure both x and z, the rank will be insufficient.
+# and that is NOT smart at alllllllllllllllll yoooooooooooooo
 
 
 lqr = lqr_controller(x_ref_, u_ref_, A, B, Ki)
@@ -49,23 +51,11 @@ R_noise = np.diag([0.1, 0.1, 0.01])
 int_ = np.zeros_like(x_)
 steps = 20000
 hist = []
-x_hist = []
-dx_hist = []
-z_hist = []
-dz_hist = []
-theta_d_hist = []
-dtheta_d_hist = []
-theta_p_hist = []
-dtheta_p_hist = []
-x_hat_hist = []
-z_hat_hist = []
-theta_d_hat_hist = []
-theta_p_hat_hist = []
-path = []
+hist_hat = []
 t_terminate = 0
 dt = 1.0e-3
 for step in range(steps):
-    # in controller, it shouldnt have access to the world
+    # in controller, it shouldnt have access to the world, it should only know what it can percieve by sensors
     int_ += (x_ref_ - x_hat_) * dt
     u_ = lqr.control_law(x_hat_, int_, Kr)
     dx_hat_pred = systemDynamics.dynamics(x_hat_, u_)
@@ -75,7 +65,7 @@ for step in range(steps):
 
     P_pred = F @ P @ F.T + Q_noise
 
-    # simulation
+    # simulation, this is the real world
     dx_ = systemDynamics.dynamics(x_, u_)
     x_ += dx_ * dt
     x_ += np.random.normal(0, 0.001, size=8)  # some gust ig idk
@@ -89,57 +79,41 @@ for step in range(steps):
     x_hat_ = x_hat_pred_ + Kf @ y_err_
     P = (np.eye(8) - Kf @ C) @ P_pred
 
-    hist.append(x_.copy())
+    # remember the past ahh code
+    # karn dern tarng korng chun lae ther kue karn rien ruuuu ahh
     x, dx, z, dz, theta_d, dtheta_d, theta_p, dtheta_p = x_
     x_hat, _, z_hat, _, theta_d_hat, _, theta_p_hat, _ = x_hat_
-    theta_d_hat = np.arctan2(np.sin(theta_d_hat), np.cos(theta_d_hat))
-    theta_p_hat = np.arctan2(np.sin(theta_p_hat), np.cos(theta_p_hat))
-    theta_d = np.arctan2(np.sin(theta_d), np.cos(theta_d))
-    theta_p = np.arctan2(np.sin(theta_p), np.cos(theta_p))
-    x_hat_hist.append(x_hat)
-    z_hat_hist.append(z_hat)
-    theta_d_hat_hist.append(theta_d_hat)
-    theta_p_hat_hist.append(theta_p_hat)
-    x_hist.append(x)
-    dx_hist.append(dx)
-    z_hist.append(z)
-    dz_hist.append(dz)
-    theta_d_hist.append(theta_d)
-    dtheta_d_hist.append(dtheta_d)
-    theta_p_hist.append(theta_p)
-    dtheta_p_hist.append(dtheta_p)
-    path.append([x, z])
+    hist.append(x_.copy())
+    hist_hat.append(x_hat_.copy())
+
     if abs(x - x_ref) < 0.001 and abs(z - z_ref) < 0.001 and t_terminate == 0:
         t_terminate = step
 
-states_hist = [
-    x_hist,
-    x_hat_hist,
-    z_hist,
-    z_hat_hist,
-    theta_d_hist,
-    theta_d_hat_hist,
-    theta_p_hist,
-    theta_p_hat_hist,
-]
+
+hist = np.array(hist)
+hist_hat = np.array(hist_hat)
+
+hist[:, 4] = np.arctan2(np.sin(hist[:, 4]), np.cos(hist[:, 4]))
+hist[:, 6] = np.arctan2(np.sin(hist[:, 6]), np.cos(hist[:, 6]))
+
+hist_hat[:, 4] = np.arctan2(np.sin(hist_hat[:, 4]), np.cos(hist_hat[:, 4]))
+hist_hat[:, 6] = np.arctan2(np.sin(hist_hat[:, 6]), np.cos(hist_hat[:, 6]))
+
+
 states_name = [
     "x",
-    "x_hat",
+    "velocity_x",
     "z",
-    "z_hat",
+    "velocity_z",
     "theta_d",
-    "theta_d_hat",
-    "theta_p_hat",
-    "theta_p_hat",
+    "angular_velocity_d",
+    "theta_p",
+    "angular_velocity_p",
 ]
 states = {}
-n = len(states_hist)
-for i in range(n):
-    states[f"{states_name[i]}"] = [states_hist[i], 0]
 
-plot_drone_LQR(states, t_terminate, Q, R)
-
-plot_drone_path(x_hist, z_hist, x_ref, z_ref)
+plot_state_history(hist, hist_hat, state_names=states_name, plot_error=True)
+plot_drone_path(hist[:, 0], hist[:, 2])
 
 animator = DronePoleAnimator(hist, pole_length=systemDynamics.l)
 ani = animator.animate()
