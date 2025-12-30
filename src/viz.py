@@ -1,4 +1,5 @@
-from turtle import color
+import math
+from tkinter import NONE
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,13 +40,14 @@ def plot_drone_LQR(states, t_terminate, Q, R):
     plt.show()
 
 
-def plot_drone_path(x, y, x_ref, y_ref):
+def plot_drone_path(x, y, x_ref=None, y_ref=None):
     plt.plot(x, y, "-o", markersize=0.5)
     plt.xlabel("x")
     plt.ylabel("z")
     plt.axis("equal")
-    plt.axhline(y=y_ref, linestyle="--")
-    plt.axvline(x=x_ref, linestyle="--")
+    if x_ref is not None and y_ref is not None:
+        plt.axhline(y=y_ref, linestyle="--")
+        plt.axvline(x=x_ref, linestyle="--")
     plt.scatter(x[-1], y[-1], color="r")
     plt.figtext(
         0.5,
@@ -141,3 +143,103 @@ class DronePoleAnimator:
 
     def show(self):
         plt.show()
+
+
+def plot_state_history(
+    hist,
+    hist_hat=None,
+    t=None,
+    state_names=None,
+    figsize=(12, 8),
+    sharex=True,
+    plot_error=False,
+    markers_every=None,
+    savepath=None,
+):
+    """
+    plot a lot of graphs:
+        1. RMSE
+        2. error of each variable vs time
+        3. true vs estimate of each variable
+    I vibed this, edited it, and now it is beautiful.
+    """
+
+    hist = np.asarray(hist)
+    T, n = hist.shape
+    if hist_hat is not None:
+        hist_hat = np.asarray(hist_hat)
+        assert hist_hat.shape == (T, n), "hist_hat shape must match hist"
+    if t is None:
+        t = np.arange(T)
+    else:
+        t = np.asarray(t)
+        assert len(t) == T
+
+    if state_names is None:
+        state_names = [f"s{i}" for i in range(n)]
+    assert len(state_names) == n
+
+    ncols = 2 if n > 3 else 1
+    nrows = math.ceil(n / ncols)
+
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, sharex=sharex)
+    # axes can be 2D/1D scalar -- normalize to 1D list
+    if nrows * ncols == 1:
+        axes = np.array([axes])
+    else:
+        axes = axes.flatten()
+
+    for i in range(n):
+        ax = axes[i]
+        ax.plot(t, hist[:, i], "-", label="true")
+        if hist_hat is not None:
+            ax.plot(t, hist_hat[:, i], "--", label="est")
+        if markers_every is not None and markers_every > 0:
+            ax.plot(t[::markers_every], hist[::markers_every, i], "o", markersize=3)
+            if hist_hat is not None:
+                ax.plot(
+                    t[::markers_every], hist_hat[::markers_every, i], "x", markersize=3
+                )
+
+        ax.set_ylabel(state_names[i])
+        ax.grid(True)
+        ax.legend(loc="upper right", fontsize="small")
+
+    # hide any unused subplots
+    for j in range(n, len(axes)):
+        axes[j].axis("off")
+
+    if sharex:
+        axes[-1].set_xlabel("time (step)" if t is None else "time")
+
+    plt.tight_layout()
+    if savepath:
+        fig.savefig(f"{savepath}_states.png", dpi=200)
+
+    if plot_error and hist_hat is not None:
+        errors = hist - hist_hat  # shape (T, n)
+        fig2, ax2 = plt.subplots(figsize=(max(8, ncols * 4), 4))
+        # plot each error with small alpha to keep it compact
+        for i in range(n):
+            ax2.plot(t, errors[:, i], label=state_names[i], linewidth=0.9)
+        ax2.set_title("Estimation error (true - est)")
+        ax2.set_xlabel("time")
+        ax2.grid(True)
+        ax2.legend(ncol=min(4, n), fontsize="small", loc="upper right")
+        plt.tight_layout()
+        if savepath:
+            fig2.savefig(f"{savepath}_errors.png", dpi=200)
+
+    if hist_hat is not None:
+        rmse = np.sqrt(((hist - hist_hat) ** 2).mean(axis=0))
+        fig3, ax3 = plt.subplots(figsize=(max(8, ncols * 4), 3))
+        ax3.bar(np.arange(n), rmse)
+        ax3.set_xticks(np.arange(n))
+        ax3.set_xticklabels(state_names, rotation=45, ha="right")
+        ax3.set_ylabel("RMSE")
+        ax3.set_title("Per-state RMSE")
+        plt.tight_layout()
+        if savepath:
+            fig3.savefig(f"{savepath}_rmse.png", dpi=200)
+
+    plt.show()
