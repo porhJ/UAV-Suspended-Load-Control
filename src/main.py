@@ -18,11 +18,11 @@ z_ref = 5
 x_ref_ = np.array([x_ref, 0, z_ref, 0, 0.5 * np.pi, 0, 0, 0])
 u_ref_ = np.array([[0.5 * M * g, 0.5 * M * g]])
 u_ref_ = u_ref_.T
-Ki = np.array([[5, 0, 5, 0, 0, 0, 0, 0], [5, 0, 5, 0, 0, 0, 0, 0]])
+Ki = np.array([[0, 0, 5, 0, 0, 0, 0, 0], [0, 0, 5, 0, 0, 0, 0, 0]])
 int_ = 0
 int_ = 0
 t_terminate = 0
-Q = np.diag([40, 20, 50, 20, 50, 100, 100, 100])
+Q = np.diag([40, 20, 50, 20, 100, 50, 100, 50])
 R = np.diag([0.1, 0.1])
 
 systemDynamics = PackageDroneIdealDynamics(m_d, m_p, Id_cm, r_d, l, x_ref_, u_ref_)
@@ -34,7 +34,7 @@ C = np.array(
         [0, 0, 0, 0, 1, 0, 0, 0],  # imu
     ]
 )
-# if using C = [1, 0, 1, 0, 0, 0, 0, 0], it implies =Nonethat it is one sensor that can measure both x and z, the rank will be insufficient.
+# if using C = [1, 0, 1, 0, 0, 0, 0, 0], it implies that it is one sensor that can measure both x and z, the rank will be insufficient.
 # and that is NOT smart at alllllllllllllllll yoooooooooooooo
 
 

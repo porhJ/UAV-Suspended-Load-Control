@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.linalg import solve_continuous_are
+from scipy.linalg import solve_discrete_are
 
 
 class lqr_controller:
@@ -11,7 +11,7 @@ class lqr_controller:
         self.Ki = Ki
 
     def get_Kr_(self, A, B, Q, R):
-        P = solve_continuous_are(A, B, Q, R)
+        P = solve_discrete_are(A, B, Q, R)
         return np.linalg.inv(R) @ B.T @ P
 
     def control_law(self, x_, int_, Kr):
