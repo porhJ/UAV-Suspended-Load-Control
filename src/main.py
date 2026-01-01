@@ -24,9 +24,11 @@ int_ = 0
 t_terminate = 0
 Q = np.diag([40, 20, 50, 20, 100, 50, 100, 50])
 R = np.diag([0.1, 0.1])
-
+dt = 1.0e-3
 systemDynamics = PackageDroneIdealDynamics(m_d, m_p, Id_cm, r_d, l, x_ref_, u_ref_)
 A, B = systemDynamics.get_jacobian(x_ref_, u_ref_)
+A = np.eye(len(A)) + A * dt
+B = B * dt
 C = np.array(
     [
         [1, 0, 0, 0, 0, 0, 0, 0],  # sensor for x
@@ -34,7 +36,7 @@ C = np.array(
         [0, 0, 0, 0, 1, 0, 0, 0],  # imu
     ]
 )
-# if using C = [1, 0, 1, 0, 0, 0, 0, 0], it implies that it is one sensor that can measure both x and z, the rank will be insufficient.
+# if using C = [1, 0, 1, 0, 0, 0, 0, 0], it implies =Nonethat it is one sensor that can measure both x and z, the rank will be insufficient.
 # and that is NOT smart at alllllllllllllllll yoooooooooooooo
 
 
@@ -53,7 +55,6 @@ steps = 20000
 hist = []
 hist_hat = []
 t_terminate = 0
-dt = 1.0e-3
 for step in range(steps):
     # in controller, it shouldnt have access to the world, it should only know what it can percieve by sensors
     int_ += (x_ref_ - x_hat_) * dt

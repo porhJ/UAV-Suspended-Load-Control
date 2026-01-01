@@ -1,5 +1,11 @@
 # Project Overview
-This project studies a planar quadrotor slung suspended payload while maintaining direction towards its goal. The controller is designed via linearization around an equilibrium where drone is hovering and an Extended Kalman Filter to estimate full states from only certain realistically measurable states. In this repository, I will be investigating the effect of disturbance and limited sensors on stability and Q/R tuning. Furthermore, I will be exploring possibility of real world applications such as for the drone delivery system.
+
+![high-level control diagram](media/diagram/control_diagram.png)
+*Figure 1: High-level control/estimation loop. The nonlinear planar quadrotor + suspended payload model is simulated (environment). The model is linearized about an equilibrium (x̄, ū) to compute continuous-time LQR gains (A,B → solve ARE → K). The controller applies u = ū + K (x̂ − x̄). An EKF fuses noisy measurements (x, z, θ_d) with the nonlinear model to estimate the full state x̂_k, which is fed back to the controller. Disturbances and sensor noise are injected at the environment (w, v)*
+        
+
+This project studies a planar quadrotor with a suspended payload under nonlinear dynamics and limited sensing. The system is modeled using first-principles dynamics and linearized around a hover equilibrium to design an LQR controller for trajectory tracking. An Extended Kalman Filter (EKF) estimates the full system state from a minimal set of realistic measurements, while disturbances and sensor noise are injected at the nonlinear plant level to evaluate stability, robustness, and controller tuning under non-ideal conditions.
+
 
 # System modelling
 ## Coordinates and assumptions
