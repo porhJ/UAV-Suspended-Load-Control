@@ -72,7 +72,9 @@ for step in range(steps):
     x_ += np.random.normal(0, 0.001, size=8)  # some gust ig idk
 
     # measure
-    y_ = C @ x_ + np.random.normal(0, 0.001, size=3)
+    sigma = np.array([0.8, 0.1, 0.02])
+    sensor_noise = np.random.normal(0, sigma)
+    y_ = C @ x_ + sensor_noise
     y_err_ = y_ - (C @ x_hat_pred_)
     S = C @ P_pred @ C.T + R_noise
     Kf = P_pred @ C.T @ np.linalg.solve(S, np.eye(len(S)))

@@ -207,3 +207,174 @@ $$\hat {\underline x}_k = \hat{\underline x}^{-}_{k} + K_f(\Delta {\underline y}
 
 
 $\hat {\underline x}_k$ is what we will send to the controller!
+
+# Results
+
+## Overview
+Goal of control is to minimize $\theta_p$ while be able to reach the final goal.
+
+Q, R intuition
+
+- $Q_x, Q_z$: penalize position error; higher → faster convergence, but too high → aggressive maneuvers and larger payload swing.
+- $Q_{\dot x}, Q_{\dot z}$: penalize speed; higher → safer for payload (limits induced swing) and reduces overshoot.
+- $Q_{θ_d}, Q_{\dot θ_d}$: keep drone attitude near horizontal; penalize large tilt and fast attitude changes to avoid motor saturation and structural stress.
+- $Q_{θ_p}, Q_{\dot θ_p}$: highest priority if you want to protect the package. Penalize payload angle strongly (θ_p) and its rate to prevent oscillation.
+- R (u₁,u₂): penalize actuator effort. Larger R → smoother, safer thrusts; smaller R → more aggressive control. Keep R so commanded thrusts remain within physical bounds (no motor saturation).
+
+Other constants
+- $m_d$ = 5 kg
+- $m_p$ = 2 kg
+- $M = m_d + m_p$
+- $r_d$ = 0.5 m
+- $l$ = 0.5 m
+- $\underline x_{ref} = [5 , 0, 5 , 0, \frac \pi 2, 0, 0, 0]$
+- $\underline u_{ref} = [\frac {Mg} 2, \frac {Mg} 2]$
+- $K_i = \begin{bmatrix}  
+0 & 0 & 5 & 0 & 0 & 0 & 0  & 0 \\
+0 & 0 & 5 & 0 & 0 & 0 & 0 & 0 \end{bmatrix}$
+- Q_noise = np.eye(8) * 0.001
+- $R_{noise_x} = 0.8^2$ (based on u-blox NEO-M8N)
+
+- $R_{noise_z} = 0.1^2$ (based on Bosch BMP388 / BMP390)
+
+- $R_{noise_{imu}} = 0.02^2$ (based on Bosch BMI088)
+- $R_{noise} =
+\begin{bmatrix} 0.8^2 &  &\\  
+ & 0.1^2 &\\
+ & & 0.02^2
+ \end{bmatrix}$
+ 
+- By 'The drone never settle', it means the drone does not come into defined settling state under 20 seconds
+- Definition of settling state:
+
+$$|x - x_{ref}| < 0.05 \wedge |z - z_{ref}| < 0.05 \wedge |\dot x| < 0.05 \wedge |\dot z| < 0.05 \wedge |\theta_p| < 10 \degree$$
+
+*for u clipping*
+- $u_{min} = [0.0, 0.0]$
+- $u_{max} = [\frac {3M} 2, \frac {3M} 2]$
+
+## Baseline
+
+These are baseline Q and R
+$$
+Q_{baseline} = diag([25, 20, 25, 20, 15, 10, 30, 10]) \\
+R_{baseline} = diag([0.5, 0.5])
+$$
+
+![baseline:true vs estimation](media/graphs/baseline/baseline_2vest.png)
+*graphs comparing true values and estimation values of each variable*
+
+![baseline:rmse of each variable](media/graphs/baseline/baseline_rmse.png)
+*graph shows rmse of each variable*
+
+![baseline:trajectory](media/graphs/baseline/baseline_traject.png)
+*graph shows trajectory of the drone*
+
+```
+Max package swing (degree):  39.81150426563668 
+Control Effort Motor 1: [4.37928378] 
+Control Effort Motor 2: [4.43946955] 
+Settling after: 5.258 seconds
+```
+
+## Failure case
+
+As I mentioned, our goal is to minimize $\theta_p$ but overpenalize state $\theta_p$ leads to aggressive control. This pushes the system outside the validity region of the linearized model, resulting in instability despite correct linearization and estimation.
+
+$$
+Q_{fail} = diag([1, 0.5, 5, 1, 8, 1, 80, 10]) \\
+R_{fail} = diag([0.5, 0.5])
+$$
+
+![fail:true vs estimation](media/graphs/fail/fail_2vest.png)
+*graphs comparing true values and estimation values of each variable*
+
+![fail:rmse of each variable](media/graphs/fail/fail_rmse.png)
+*graph shows rmse of each variable*
+
+![fail:trajectory](media/graphs/fail/fail_traject.png)
+*graph shows trajectory of the drone*
+
+```
+Max package swing (degree):  179.99730329689325
+Control Effort Motor 1: [39.21058755]
+Control Effort Motor 2: [39.47316862]
+The drone never settle
+```
+
+## Robustness test
+*Note: I used the baseline Q and R in this section*
+### Sinusoidal gust
+In this section, I will be investigating the system when it is experienced by a sinusoidal gust:
+
+$$F(t) = 0.1Mg \sin (2 \pi \cdot 1.5t)$$
+
+![sinGust:true vs estimation](media/graphs/sinGust/sinGust_2vest.png)
+*graphs comparing true values and estimation values of each variable*
+
+![sinGust:rmse of each variable](media/graphs/sinGust/sinGust_rmse.png)
+*graph shows rmse of each variable*
+
+![sinGust:trajectory](media/graphs/sinGust/sinGust_traject.png)
+*graph shows trajectory of the drone*
+
+```
+Max package swing (degree):  64.91850800077341
+Control Effort Motor 1: [7.45489251]
+Control Effort Motor 2: [7.46984197]
+Settling after: 11.431000000000001 seconds
+```
+
+### Sensor noise increases
+In this section, I will be investigating the system when it is experienced by abnormally high sensor noise. This is conducted by multiplying the default sensor noises with a constant (n).
+
+#### n = 2
+![sensorNoise:true vs estimation](media/graphs/sensorNoise/sensorNoise2_2vest.png)
+*graphs comparing true values and estimation values of each variable*
+
+![sensorNoise:rmse of each variable](media/graphs/sensorNoise/sensorNoise2_rmse.png)
+*graph shows rmse of each variable*
+
+![sensorNoise:trajectory](media/graphs/sensorNoise/sensorNoise2_traject.png)
+*graph shows trajectory of the drone*
+
+```
+Max package swing (degree):  65.77895210530531
+Control Effort Motor 1: [13.21638327]
+Control Effort Motor 2: [13.2817721]
+Settling after: 16.281 seconds
+```
+
+#### n = 3
+![sensorNoise:true vs estimation](media/graphs/sensorNoise/sensorNoise3_2vest.png)
+*graphs comparing true values and estimation values of each variable*
+
+![sensorNoise:rmse of each variable](media/graphs/sensorNoise/sensorNoise3_rmse.png)
+*graph shows rmse of each variable*
+
+![sensorNoise:trajectory](media/graphs/sensorNoise/sensorNoise3_traject.png)
+*graph shows trajectory of the drone*
+
+```
+Max package swing (degree):  66.97846057547555
+Control Effort Motor 1: [18.20949201]
+Control Effort Motor 2: [18.44967125]
+Settling after: 16.342 seconds
+```
+
+#### n = 4
+![sensorNoise:true vs estimation](media/graphs/sensorNoise/sensorNoise4_2vest.png)
+*graphs comparing true values and estimation values of each variable*
+
+![sensorNoise:rmse of each variable](media/graphs/sensorNoise/sensorNoise4_rmse.png)
+*graph shows rmse of each variable*
+
+![sensorNoise:trajectory](media/graphs/sensorNoise/sensorNoise4_traject.png)
+*graph shows trajectory of the drone*
+
+```
+Max package swing (degree):  68.37264148916749
+Control Effort Motor 1: [22.44804497]
+Control Effort Motor 2: [22.81308394]
+The drone never settle
+```
