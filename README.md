@@ -100,7 +100,7 @@ $$J = \int_{0}^{\infty} (\underline{x}^{T}Q\underline{x} + u^{T}Ru) dt$$
 
 Solving the Algebraic Riccati Equation yields the optimal gain matrix $K_r$, which is used in the control law $u = -K_rx$.
 
-*there is more mathematical detail on how to compute K, but I am not gonna write it out here as it so long, but I encourage you to look up the calculation detail from this MIT's Underactuated Robotics book [https://underactuated.mit.edu/lqr.html]*
+*For brevity, the full mathematical derivation is omitted here but follows standard optimal control theory conventions from this MIT's Underactuated Robotics book [https://underactuated.mit.edu/lqr.html]*
 
 * The state weighting matrix Q is diagonal, allowing us to tune the importance of each state individually:
 

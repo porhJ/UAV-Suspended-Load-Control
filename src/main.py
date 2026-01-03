@@ -23,7 +23,7 @@ int_ = 0
 int_ = 0
 t_terminate = 0
 Q = np.diag([40, 20, 50, 20, 100, 50, 100, 50])
-R = np.diag([0.1, 0.1])
+R = np.diag([0.05, 0.05])
 dt = 1.0e-3
 systemDynamics = PackageDroneIdealDynamics(m_d, m_p, Id_cm, r_d, l, x_ref_, u_ref_)
 A, B = systemDynamics.get_jacobian(x_ref_, u_ref_)
@@ -36,8 +36,7 @@ C = np.array(
         [0, 0, 0, 0, 1, 0, 0, 0],  # imu
     ]
 )
-# if using C = [1, 0, 1, 0, 0, 0, 0, 0], it implies =Nonethat it is one sensor that can measure both x and z, the rank will be insufficient.
-# and that is NOT smart at alllllllllllllllll yoooooooooooooo
+# if using C = [1, 0, 1, 0, 1, 0, 0, 0], it implies that it is one sensor that can measure both x and z, the rank will be insufficient.
 
 
 lqr = lqr_controller(x_ref_, u_ref_, A, B, Ki)
@@ -82,8 +81,7 @@ for step in range(steps):
     x_hat_ = x_hat_pred_ + Kf @ y_err_
     P = (np.eye(8) - Kf @ C) @ P_pred
 
-    # remember the past ahh code
-    # karn dern tarng korng chun lae ther kue karn rien ruuuu ahh
+    # history for visualization
     x, dx, z, dz, theta_d, dtheta_d, theta_p, dtheta_p = x_
     x_hat, _, z_hat, _, theta_d_hat, _, theta_p_hat, _ = x_hat_
     hist.append(x_.copy())

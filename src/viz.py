@@ -122,7 +122,7 @@ class DronePoleAnimator:
         verts = np.column_stack([rot_x, rot_z])
         self.drone.set_xy(verts)
 
-        # --- 2. Pole Geometry (Unchanged) ---
+        # --- 2. Pole Geometry ---
         px = x + self.l * np.sin(theta_p)
         pz = z - self.l * np.cos(theta_p)
         self.pole.set_data([x, px], [z, pz])
@@ -160,7 +160,6 @@ def plot_state_history(
         1. RMSE
         2. error of each variable vs time
         3. true vs estimate of each variable
-    I vibed this, edited it, and now it is beautiful.
     """
 
     hist = np.asarray(hist)
