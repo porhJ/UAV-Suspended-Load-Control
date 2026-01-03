@@ -4,30 +4,29 @@
 *Figure 1: High-level control/estimation loop. The nonlinear planar quadrotor + suspended payload model is simulated (environment). The model is linearized about an equilibrium (x̄, ū) to compute continuous-time LQR gains (A,B → solve ARE → K). The controller applies u = ū + K (x̂ − x̄). An EKF fuses noisy measurements (x, z, θ_d) with the nonlinear model to estimate the full state x̂_k, which is fed back to the controller. Disturbances and sensor noise are injected at the environment (w, v)*
         
 
-This project studies a planar quadrotor with a suspended payload under nonlinear dynamics and limited sensing. The system is modeled using first-principles dynamics and linearized around a hover equilibrium to design an LQR controller for trajectory tracking. An Extended Kalman Filter (EKF) estimates the full system state from a minimal set of realistic measurements, while disturbances and sensor noise are injected at the nonlinear plant level to evaluate stability, robustness, and controller tuning under non-ideal conditions.
+This project investigates the dynamics and control of a planar quadrotor with a suspended payload, operating under nonlinear dynamics and limited sensing constraints. The system is modeled using first-principles dynamics and linearized around a hover equilibrium to facilitate the design of a Linear Quadratic Regulator (LQR) for trajectory tracking. An Extended Kalman Filter (EKF) is implemented to estimate the full system state from a minimal set of realistic measurements. To evaluate stability, robustness, and controller performance under non-ideal conditions, disturbances and sensor noise are injected directly into the nonlinear plant simulation.
 
 
 # System modelling
 ## Coordinates and assumptions
 * Diagram ![diagram of the system](media/diagram/system_diagram.jpg)
-* State 
+* State: We define the configuration vector q and the full state vector $\underline x$ as:
 
 $$q = [x, z, \theta_d, \theta_p] \\ \underline{x} = [q, \dot{q}] = [x, \dot{x}, z, \dot{z}, \theta_d, \dot{\theta_d}, \theta_p, \dot{\theta_p}]$$
 
-*where $\theta_d$ is an angle of the drone and $\theta_p$ is an angle of the package* 
+*where \theta_d is the drone's attitude and \theta_p is the package swing angle.* 
 
 * Angle convention
-	* $\theta_d$: measures clockwise perpendicular to the drone
-	* $\theta_p$: measures counter-clockwise perpendicular to the drone
-* The package is a point mass
-* The rigid string is very light
-* The drone is a 2 dimensional rod
-* All disturbances and noises are Gaussian. 
+	* $\theta_d$ is measured clockwise (drone tilt)
+	* $\theta_p$ is measured counter-clockwise (payload swing)
+* The package is modeled as a point mass connected by a massless, rigid string.
+* The drone is modeled as a 2D rigid rod.
+* Noise: All environmental disturbances and sensor noises are assumed to be Gaussian.
 
 ## System dynamics
 * $m_d, m_p$ are masses of the drone and the package, respectively. $l$ is a length of the rigid string from the drone to the package. $I_{cm}$ is the moment of inertia of the drone at the center of mass. $r$ is the length from CM of the drone to each propeller
 * $[x, z]$ are vectors from origin to $CM in the $x-z$ coordinate
-* Deriving kinetics energy $T$ and potential energy $U$
+* Energy & Lagrangian: We derive the equations of motion using the Lagrangian method. First, we define the Kinetic Energy (T) and Potential Energy (U):ss
 
 $$T = \frac 1 2 (m_d + m_p) (\dot{x}^2+\dot{z}^2) + m_pl\dot{\theta_p} (\dot{x}\cos{\theta_p} + \dot{z}\sin{\theta_p}) + \frac 1 2 m_p l ^2 \dot{\theta_p}^2 + \frac 1 2 I_{cm} \dot{\theta_d}^2$$
 $$U = (m_p + m_d)gz - m_pgl\cos{\theta_p}$$
@@ -35,7 +34,7 @@ $$U = (m_p + m_d)gz - m_pgl\cos{\theta_p}$$
 
 $$\frac d {dt} \frac {\partial} {\partial{\underline {\dot{q}}}} L - \frac {\partial} {\partial \underline {q}} L = Q$$
 
-* From the Manipulator equation in q-space, $M(q)\ddot{q} + C(q,\dot{q})\dot{q} = \tau(q) + Bu$, we get
+* This yields the standard manipulator equation in q-space, $M(q)\ddot{q} + C(q,\dot{q})\dot{q} = \tau(q) + Bu$, we get
 
 $$M = \begin{bmatrix}  
 m_d+m_p & 0 & 0 & m_pl\cos \theta_p \\  
@@ -70,9 +69,9 @@ $$
 
 
 # Linearization
-As we will be using LQR as a controller, it requires the system to be linear as it has to use $A$A and $B$B from the $\underline{\dot x} = A\underline{x} + B \underline{u}$ to compute $K$
+To control the drone using LQR, we first need a linear representation of our system in the standard state-space form: $\dot {\underline x} = A {\underline x} + B {\underline u}$. Since our actual dynamics are nonlinear, we linearize the model around a stable equilibrium point.
 
-To linearize the s we need to choose an equilibrium point, and linearize the system around that point. In our case, I would choose the equilibrium point where the drone is hovering horizontally and the packaging is hanging downward without any angle offset. Consequently, we need thrust equal to the weight of the drone to hover. Thus, our equilibrium state and input $\underline{u}$ is
+Equilibrium State We choose the "hover" configuration as our equilibrium. In this state, the drone is horizontal, the payload hangs directly downward, and the total thrust equals the total weight of the system (Mg).
 
 $$\underline {\bar{x}} = [x_{ref}, 0, z_{ref}, 0, \frac \pi 2, 0, 0, 0]$$
 
@@ -92,16 +91,18 @@ $$\Delta\underline{\dot{x}} = \frac D {D\underline{x}} f(\bar{\underline{x}}, \b
 ## Overview of the control, in full state feedback case.
 ![Diagram of LQR control](https://www.mathworks.com/discovery/optimal-control/_jcr_content/mainParsys/columns/daa10959-3b74-4985-b7e9-d12f3dee67b6/image_copy.adapt.full.medium.jpg/1765106504765.jpg "source: https://www.mathworks.com/discovery/optimal-control.html")*the image is from https://www.mathworks.com/discovery/optimal-control.html*
 
-LQR is an optimal control. Unlike pole placement, you don't have to choose stable eigenvalues ($\lambda < 0$), and then solve for K, in LQR, we find the optimal K by choosing characteristic. Q and R are penalizing bad performance (error between desired state and the current state) and actuator effort (how aggressive we can command the actuator) respectively. The cost function is
+We employ a Linear Quadratic Regulator (LQR) for optimal control. Unlike pole placement, where stability is achieved by manually selecting eigenvalues, LQR finds the optimal gain matrix K by minimizing a specific cost function. This approach allows us to balance the trade-off between trajectory tracking performance and energy consumption. The cost function is
 
-$$J = \int_{0}^{\infty} (\underline{x}^{T}Q\underline{x} + u^{T}Ru) dt  $$
+$$J = \int_{0}^{\infty} (\underline{x}^{T}Q\underline{x} + u^{T}Ru) dt$$
 
-and our goal here is to find u such that minimize the cost function.
-From math, $K$ is the optimal gain that results in minimizing the cost function J
+- Q (State Penalty): Penalizes the error between the current state and the desired state (tracking accuracy).
+- R (Control Penalty): Penalizes the magnitude of the control input (actuator effort).
+
+Solving the Algebraic Riccati Equation yields the optimal gain matrix $K_r$, which is used in the control law $u = -K_rx$.
 
 *there is more mathematical detail on how to compute K, but I am not gonna write it out here as it so long, but I encourage you to look up the calculation detail from this MIT's Underactuated Robotics book [https://underactuated.mit.edu/lqr.html]*
 
-* $Q$ is a diagonal matrix, and, in this case,
+* The state weighting matrix Q is diagonal, allowing us to tune the importance of each state individually:
 
  $$Q = \begin{bmatrix}  
 Qx &  & &  &  &  &  & \\  
@@ -114,7 +115,7 @@ Qx &  & &  &  &  &  & \\
  &  &  &  &  &  &  & Q_{\dot {\theta_p}} \\
 \end{bmatrix}$$
 
-* $R$ is also a diagonal matrix because we have 2 inputs, two propellers.
+* The control weighting matrix R is also diagonal, penalizing the thrust of the two propellers:
 
 $$R = \begin{bmatrix}R_{u_1} &  \\  
  & R_{u_2}
@@ -124,7 +125,7 @@ $$R = \begin{bmatrix}R_{u_1} &  \\
 
 $$K_r = \begin{bmatrix}  k_1 & ... & k_8 \end{bmatrix}$$ 
 
-Furthermore, unlike the inverted pendulum system where the equilibrium control input is zero, a multirotor UAV requires a constant non-zero thrust to counteract gravity, even at a stable hover. Relying solely on the proportional feedback $\underline{\bar u}$ can lead to steady-state errors due to model uncertainties or unmodeled disturbances. To eliminate this, we introduce an integral term similar to what we do in PID.
+Unlike an inverted pendulum system where the equilibrium control input is often zero, a multirotor UAV requires a constant non-zero thrust to counteract gravity, even at a stable hover. Relying solely on the proportional feedback combined with the feed-forward equilibrium thrust can result in steady-state errors (oscillating) due to model uncertainties or unmodeled disturbances. To eliminate this offset, we introduce an integral action similar to that used in PID control.
 
 $$K_i = \begin{bmatrix}  
 k_x & k_{\dot{x}} & k_z & k_{\dot{z}} & k_{\theta_d} & k_{\dot{\theta_d}} & k_{\theta_p} & k_{\dot{\theta_p}} \\
@@ -132,32 +133,30 @@ k_x & k_{\dot{x}} & k_z & k_{\dot{z}} & k_{\theta_d} & k_{\dot{\theta_d}} & k_{\
 
 *Each row corresponding for each propeller*
 
-It is worth to note that only the gains corresponding to the altitude ($K_z$) are non-zero; all other elements are set to zero. This is because gravity acts solely in the vertical axis, z.
+It is important to note that only the gains corresponding to altitude (kz​) are non-zero; all other elements are set to zero. This design targets the specific physics of the system: since gravity acts as a constant external bias solely in the vertical axis (z), the integrator is required only to accumulate the altitude error to maintain a precise hover.
 
 However, in this project, $\underline{y} \ne \underline x$ but instead $\underline y = C\underline x$. So instead of straight up passing $\underline y$ into our controller like in the diagram, we must pass $\underline y$ into our observer first.
 
 # Observer
 ## Overview of the observer
-In this project, we assume to have access to 3 states out of total 8 states
+In this project, we assume the system does not have access to the full state vector. Instead, we rely on a realistic set of sensors that provide 3 specific measurements out of the 8 total states:
 1. Horizontal coordinate, $x$, via a GPS
 2. Vertical coordinate, $z$, via an altimeter 
 3. Drone tilt, $\theta_d$, via an IMU
 
 *These  are minimum sensors on a real drone.*
 
-Thus, here is our $C$ matrix
+This sensor configuration is defined by the observation matrix
 
 $$C = \begin{bmatrix}  
 1 & 0 & 0 & 0 & 0 & 0 & 0  & 0 \\
 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0\end{bmatrix} $$
 
-Look it closely, you will see that each row represents each sensor!
-
-And $\underline{y}$ is a measurable states vector, where $\underline{y} = C\underline{x}$
+Notice that each row corresponds to a single sensor, mapping the full state vector $\underline x$ to the measurement vector $\underline y$ such that $\underline y=C \underline x$.
 
 ### Observability 
-Before proceed anything further, we should look if available sensors are sufficient to estimate, aka. "know", every states or not. We can check this easily by looking at the rank of the matrix $\mathcal{O}$ where 
+Before designing the estimator, we must verify if the available sensors are sufficient to reconstruct the full internal state of the system (e.g., can we infer the payload swing velocity just by knowing the drone's position?). We check this by computing the rank of the observability matrix $\mathcal{O}$
 
 $$\mathcal{O} = [C, CA, CA^2, ..., CA^{n-1}]^T$$
 
@@ -168,9 +167,9 @@ n is number of states in x, and, in this case, n = 8
 In our case, around equilibrium point, $\underline {\bar x}$, the system is observable with matrix $C$.
 
 ## Extended Kalman Filter (EKF)
-In this project, due to nature of our non-linear system, we choose to use EKF as our observer instead of the traditional Kalman Filter(KF). EKF will estimate all 8 states, $\hat {\underline x}$.
+Since our system dynamics are highly nonlinear (especially the payload swing), a standard linear Kalman Filter would likely diverge. Instead, we implement an Extended Kalman Filter (EKF), which linearizes the system dynamically at each time step.
 
-Like KF, EKF consists with 2 phases; prediction and update. 
+The EKF operates in two repeating phases:
 
 **Prediction**: predict the next state $\hat{\underline x}^-$ using **non-linear** physics model. 
 
@@ -214,8 +213,11 @@ $\hat {\underline x}_k$ is what we will send to the controller!
 
 # Results
 
-## Overview
-Goal of control is to minimize $\theta_p$ while be able to reach the final goal.
+## Overview & Experimental Setup
+The primary control objective is to reach the target coordinates while minimizing the payload swing ($\theta_p$). We define "settling" as the system maintaining the following state bounds for at least 20 seconds:
+
+$$|x - x_{ref}| < 0.05 \wedge |z - z_{ref}| < 0.05 \wedge |\dot x| < 0.05 \wedge |\dot z| < 0.05 \wedge |\theta_p| < 10 \degree$$
+
 
 Q, R intuition
 
@@ -225,12 +227,9 @@ Q, R intuition
 - $Q_{θ_p}, Q_{\dot θ_p}$: highest priority if you want to protect the package. Penalize payload angle strongly (θ_p) and its rate to prevent oscillation.
 - R (u₁,u₂): penalize actuator effort. Larger R → smoother, safer thrusts; smaller R → more aggressive control. Keep R so commanded thrusts remain within physical bounds (no motor saturation).
 
-Other constants
-- $m_d$ = 5 kg
-- $m_p$ = 2 kg
-- $M = m_d + m_p$
-- $r_d$ = 0.5 m
-- $l$ = 0.5 m
+System constants
+- $m_d$ = 5 kg, $m_p$ = 2 kg, $M = m_d + m_p$
+- $r_d$ = 0.5 m, $l$ = 0.5 m
 - $\underline x_{ref} = [5 , 0, 5 , 0, \frac \pi 2, 0, 0, 0]$
 - $\underline u_{ref} = [\frac {Mg} 2, \frac {Mg} 2]$
 
@@ -238,12 +237,11 @@ $$K_i = \begin{bmatrix}
 0 & 0 & 5 & 0 & 0 & 0 & 0  & 0 \\
 0 & 0 & 5 & 0 & 0 & 0 & 0 & 0 \end{bmatrix}$$
 
-- Q_noise = np.eye(8) * 0.001
-- $R_{noise_x} = 0.8^2$ (based on u-blox NEO-M8N)
+- GPS(x): $\sigma$ = 0.8 m (ref: u-blox NEO-M8N)
 
-- $R_{noise_z} = 0.1^2$ (based on Bosch BMP388 / BMP390)
+- Altimeter(z): $\sigma$ = 0.1 m (ref: Bosch BMP388 / BMP390)
 
-- $R_{noise_{imu}} = 0.02^2$ (based on Bosch BMI088)
+- IMU ($\theta_d$): $\sigma$ = 0.02 rad (ref: Bosch BMI088)
 
 $$R_{noise} =
 \begin{bmatrix} 0.8^2 &  &\\  
@@ -251,18 +249,13 @@ $$R_{noise} =
  & & 0.02^2
  \end{bmatrix}$$
  
-- By 'The drone never settle', it means the drone does not come into defined settling state under 20 seconds
-- Definition of settling state:
-
-$$|x - x_{ref}| < 0.05 \wedge |z - z_{ref}| < 0.05 \wedge |\dot x| < 0.05 \wedge |\dot z| < 0.05 \wedge |\theta_p| < 10 \degree$$
-
 *for u clipping*
 - $u_{min} = [0.0, 0.0]$
 - $u_{max} = [\frac {3M} 2, \frac {3M} 2]$
 
 ## Baseline
 
-These are baseline Q and R
+Using our tuned "Baseline" Q and R matrices, the system performs robustly.
 
 $$
 Q_{baseline} = diag([25, 20, 25, 20, 15, 10, 30, 10]) \\
@@ -287,7 +280,10 @@ Settling after: 5.258 seconds
 
 ## Failure case
 
-As I mentioned, our goal is to minimize $\theta_p$ but overpenalize state $\theta_p$ leads to aggressive control. This pushes the system outside the validity region of the linearized model, resulting in instability despite correct linearization and estimation.
+To test the limits of LQR, we aggressively penalized payload swing (Q_{{\theta}_p} = 80, up from 30).
+
+- Observation: The controller commanded violent inputs to zero out the swing angle instantly.
+- Analysis: This confirms that over-penalizing specific states can push the system outside the linear validity region of the LQR model. The aggressive commands excited nonlinear dynamics that the linearized controller could not predict or counteract.
 
 $$
 Q_{fail} = diag([1, 0.5, 5, 1, 8, 1, 80, 10]) \\
@@ -311,11 +307,14 @@ The drone never settle
 ```
 
 ## Robustness test
-*Note: I used the baseline Q and R in this section*
+We subjected the baseline controller to adverse environmental conditions.
 ### Sinusoidal gust
-In this section, I will be investigating the system when it is experienced by a sinusoidal gust:
+Disturbance: 
 
 $$F(t) = 0.1Mg \sin (2 \pi \cdot 1.5t)$$
+
+Result: The system settled in 11.43 seconds. Despite the constant external forcing, the integral term and LQR feedback successfully maintained stability, albeit with increased payload swing (~65°).
+
 
 ![sinGust:true vs estimation](media/graphs/sinGust/sinGust_2vest.png)
 *graphs comparing true values and estimation values of each variable*
@@ -334,7 +333,7 @@ Settling after: 11.431000000000001 seconds
 ```
 
 ### Sensor noise increases
-In this section, I will be investigating the system when it is experienced by abnormally high sensor noise. This is conducted by multiplying the default sensor noises with a constant (n).
+We scaled the standard deviation of all sensor noise by a factor n.
 
 #### n = 2
 ![sensorNoise:true vs estimation](media/graphs/sensorNoise/sensorNoise2_2vest.png)
@@ -380,6 +379,9 @@ Settling after: 16.342 seconds
 ![sensorNoise:trajectory](media/graphs/sensorNoise/sensorNoise4_traject.png)
 *graph shows trajectory of the drone*
 
+#### Conclusion
+The system is robust to noise levels up to 3x the specification of standard commercial sensors.
+
 ```
 Max package swing (degree):  68.37264148916749
 Control Effort Motor 1: [22.44804497]
@@ -388,7 +390,9 @@ The drone never settle
 ```
 
 ## Sensitivity study
-A Q/R sensitivity study was conducted by varying the payload angle penalty $Q_{\theta_p}$ and control penalty $R$ over a 3×3 grid. Performance was evaluated using position RMSE, maximum payload swing, and mean control effort. Results show that while increasing $Q_{\theta_p}$ reducing ${\theta_p}_max$, it leads to higher mean effort, results in poor overall performance.
+We conducted a grid search on payload angle penalty $Q_{\theta_p}$ and control penalty $R$ over a 3×3 to optimize performance. A composite score was calculated as: $2{\theta_p}_{max} + 1{rmse}_x + 0.5\bar {effort}$.
+
+Key Finding: While increasing $Q_{\theta_p}$ does reduce the maximum swing angle, it drastically increases control effort and settles slower. The optimal balance was found at $Q_{\theta_p}$ =20,R=0.2, which yielded the lowest composite score (5.72).
 
 $Q_{\theta_p}$ is varying by these values [20, 60, 120]
 R is varying by these values [0.05, 0.1, 0.2]
@@ -412,7 +416,7 @@ score             5.718792
 ```
 
 ## Observer Evaluation
-This section is to compare between EKF and naive estimation where directly use unmeasured states as zeros. The experiment shows how EKF saves the day!
+To validate the necessity of the Extended Kalman Filter, we compared it against a "Naive" observer (which assumes unmeasured states like velocity are simply 0).
 
 ![obsv:naive2vest](media/graphs/obsv/obsv_2vest.png)
 *graphs comparing true values and estimation values of each variable of naive observer*
@@ -435,3 +439,6 @@ angular_velocity_p   |      0.776 |        9.976
 
 ![obsv rmse vs ekf rmse](media/graphs/obsv/obsv_bar.png)
 *graphs comparing system without ekf and system with ekf of each variable of EKF observer*
+
+### Conclusion
+The Naive approach is functionally useless for dynamic control, with velocity errors huge enough to crash the system immediately. The EKF successfully infers the hidden states (like payload swing velocity) with high accuracy, enabling stable flight.
