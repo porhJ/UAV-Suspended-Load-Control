@@ -410,3 +410,28 @@ mean_effort       5.584478
 settling_time     6.837000
 score             5.718792
 ```
+
+## Observer Evaluation
+This section is to compare between EKF and naive estimation where directly use unmeasured states as zeros. The experiment shows how EKF saves the day!
+
+![obsv:naive2vest](media/graphs/obsv/obsv_2vest.png)
+*graphs comparing true values and estimation values of each variable of naive observer*
+
+![obsv:2vest](media/graphs/baseline/baseline_2vest.png)
+*graphs comparing true values and estimation values of each variable of EKF observer*
+
+```
+State                |   EKF RMSE |  No EKF RMSE
+------------------------------------------------
+x                    |      0.123 |        0.800
+velocity_x           |      0.209 |       10.771
+z                    |      0.039 |        0.099
+velocity_z           |      0.046 |       87.542
+theta_d              |      0.016 |        0.284
+angular_velocity_d   |      0.016 |        3.732
+theta_p              |      0.100 |        1.789
+angular_velocity_p   |      0.776 |        9.976
+```
+
+![obsv rmse vs ekf rmse](media/graphs/obsv/obsv_bar.png)
+*graphs comparing system without ekf and system with ekf of each variable of EKF observer*
