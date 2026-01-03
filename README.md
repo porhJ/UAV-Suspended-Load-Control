@@ -13,6 +13,7 @@ This project studies a planar quadrotor with a suspended payload under nonlinear
 * State 
 
 $$q = [x, z, \theta_d, \theta_p] \\ \underline{x} = [q, \dot{q}] = [x, \dot{x}, z, \dot{z}, \theta_d, \dot{\theta_d}, \theta_p, \dot{\theta_p}]$$
+
 *where $\theta_d$ is an angle of the drone and $\theta_p$ is an angle of the package* 
 
 * Angle convention
@@ -94,6 +95,7 @@ $$\Delta\underline{\dot{x}} = \frac D {D\underline{x}} f(\bar{\underline{x}}, \b
 LQR is an optimal control. Unlike pole placement, you don't have to choose stable eigenvalues ($\lambda < 0$), and then solve for K, in LQR, we find the optimal K by choosing characteristic. Q and R are penalizing bad performance (error between desired state and the current state) and actuator effort (how aggressive we can command the actuator) respectively. The cost function is
 
 $$J = \int_{0}^{\infty} (\underline{x}^{T}Q\underline{x} + u^{T}Ru) dt  $$
+
 and our goal here is to find u such that minimize the cost function.
 From math, $K$ is the optimal gain that results in minimizing the cost function J
 
@@ -119,6 +121,7 @@ $$R = \begin{bmatrix}R_{u_1} &  \\
  \end{bmatrix}$$
 
 * $K_r$ is the optimal gain 1x8 matrix, 
+
 $$K_r = \begin{bmatrix}  k_1 & ... & k_8 \end{bmatrix}$$ 
 
 Furthermore, unlike the inverted pendulum system where the equilibrium control input is zero, a multirotor UAV requires a constant non-zero thrust to counteract gravity, even at a stable hover. Relying solely on the proportional feedback $\underline{\bar u}$ can lead to steady-state errors due to model uncertainties or unmodeled disturbances. To eliminate this, we introduce an integral term similar to what we do in PID.
@@ -157,7 +160,8 @@ And $\underline{y}$ is a measurable states vector, where $\underline{y} = C\unde
 Before proceed anything further, we should look if available sensors are sufficient to estimate, aka. "know", every states or not. We can check this easily by looking at the rank of the matrix $\mathcal{O}$ where 
 
 $$\mathcal{O} = [C, CA, CA^2, ..., CA^{n-1}]^T$$
-*n is number of states in $x$, and, in this case, n = 8*
+
+n is number of states in x, and, in this case, n = 8
 
 * If rank($\mathcal{O}$) = n, the system is observable, which means we can estimate full state $\underline{x}$ from $\underline{y}$
 
@@ -178,9 +182,9 @@ Because we did not measure yet, uncertainty, $P_k^-$, increases.
 
 $$P_{k}^- = FP_{k-1}F^T + Q_{noise}$$
 
-* *$Q_{noise}$ is the Process Noise Covariance, it is a hyperparameter we have to tune. It is to capture how inaccurate our model is. It is high if we think the environmental disturbance (e.g. gust) is high*
+* $Q_{noise}$ is the Process Noise Covariance, it is a hyperparameter we have to tune. It is to capture how inaccurate our model is. It is high if we think the environmental disturbance (e.g. gust) is high
 
-* *$F$ is a Jacobian matrix at current state $\underline {\hat x}$, i.e., $\frac D {D \underline x}f(\underline x, \underline u)|_{x =\underline {\hat x}_{k-1}}$*
+* $F$ is a Jacobian matrix at current state $\underline {\hat x}$, i.e., $\frac D {D \underline x}f(\underline x, \underline u)|_{x =\underline {\hat x}_{k-1}}$
 
 **Update**: Measure $\underline y$ and correct the prediction
 We get $\underline y$ from the sensors (This is happening in the sensors, not what we can control)
@@ -194,7 +198,7 @@ $$\Delta \underline y = \underline y - C\hat{\underline x}^{-}_{k} $$
 And uncertainty of measurement from the sensors can compute with
 
 $$S =CP_{k+1}^- C^T + R_{noise}$$
-* *$R_{noise}$ is the sensors noise matrix, it often can be found in sensor sheet*
+* $R_{noise}$ is the sensors noise matrix, it often can be found in sensor sheet
 
 Now, we can compute $K_f$ or Kalman gain which tells us how much we should trust the sensors
 
@@ -229,20 +233,23 @@ Other constants
 - $l$ = 0.5 m
 - $\underline x_{ref} = [5 , 0, 5 , 0, \frac \pi 2, 0, 0, 0]$
 - $\underline u_{ref} = [\frac {Mg} 2, \frac {Mg} 2]$
-- $K_i = \begin{bmatrix}  
+
+$$K_i = \begin{bmatrix}  
 0 & 0 & 5 & 0 & 0 & 0 & 0  & 0 \\
-0 & 0 & 5 & 0 & 0 & 0 & 0 & 0 \end{bmatrix}$
+0 & 0 & 5 & 0 & 0 & 0 & 0 & 0 \end{bmatrix}$$
+
 - Q_noise = np.eye(8) * 0.001
 - $R_{noise_x} = 0.8^2$ (based on u-blox NEO-M8N)
 
 - $R_{noise_z} = 0.1^2$ (based on Bosch BMP388 / BMP390)
 
 - $R_{noise_{imu}} = 0.02^2$ (based on Bosch BMI088)
-- $R_{noise} =
+
+$$R_{noise} =
 \begin{bmatrix} 0.8^2 &  &\\  
  & 0.1^2 &\\
  & & 0.02^2
- \end{bmatrix}$
+ \end{bmatrix}$$
  
 - By 'The drone never settle', it means the drone does not come into defined settling state under 20 seconds
 - Definition of settling state:
@@ -256,6 +263,7 @@ $$|x - x_{ref}| < 0.05 \wedge |z - z_{ref}| < 0.05 \wedge |\dot x| < 0.05 \wedge
 ## Baseline
 
 These are baseline Q and R
+
 $$
 Q_{baseline} = diag([25, 20, 25, 20, 15, 10, 30, 10]) \\
 R_{baseline} = diag([0.5, 0.5])
@@ -377,4 +385,28 @@ Max package swing (degree):  68.37264148916749
 Control Effort Motor 1: [22.44804497]
 Control Effort Motor 2: [22.81308394]
 The drone never settle
+```
+
+## Sensitivity study
+A Q/R sensitivity study was conducted by varying the payload angle penalty $Q_{\theta_p}$ and control penalty $R$ over a 3×3 grid. Performance was evaluated using position RMSE, maximum payload swing, and mean control effort. Results show that while increasing $Q_{\theta_p}$ reducing ${\theta_p}_max$, it leads to higher mean effort, results in poor overall performance.
+
+$Q_{\theta_p}$ is varying by these values [20, 60, 120]
+R is varying by these values [0.05, 0.1, 0.2]
+
+![sensitivity:table](media/graphs/sensitivity/sensitivity_table.png)
+
+![sensitivity:heatmap](media/graphs/sensitivity/sensitivity_heatmap.png)
+
+Score is computed by $2{\theta_p}_{max} + 1{rmse}_x + 0.5\bar {effort}$
+Based on the above metric, the best combination of $Q_{\theta_p}$ and $R$ are 20 and 0.2.
+
+```
+Q_theta_p        20.000000
+R                 0.200000
+rmse_x            0.839915
+rmse_z            1.004383
+max_theta_p       1.043319
+mean_effort       5.584478
+settling_time     6.837000
+score             5.718792
 ```
