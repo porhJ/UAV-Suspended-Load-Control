@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.animation import FFMpegWriter
 
 from controller import lqr_controller
 from dynamics import PackageDroneIdealDynamics
@@ -13,7 +14,7 @@ g = 9.8
 r_d = 0.5
 Id_cm = 1 / 12 * m_d * (2 * r_d) ** 2
 l = 0.5
-x_ref = 7
+x_ref = 5
 z_ref = 5
 x_ref_ = np.array([x_ref, 0, z_ref, 0, 0.5 * np.pi, 0, 0, 0])
 u_ref_ = np.array([[0.5 * M * g, 0.5 * M * g]])
@@ -22,8 +23,8 @@ Ki = np.array([[0, 0, 5, 0, 0, 0, 0, 0], [0, 0, 5, 0, 0, 0, 0, 0]])
 int_ = 0
 int_ = 0
 t_terminate = 0
-Q = np.diag([40, 20, 50, 20, 100, 50, 100, 50])
-R = np.diag([0.05, 0.05])
+Q = np.diag([25, 20, 25, 20, 15, 10, 20, 10])
+R = np.diag([0.2, 0.2])
 dt = 1.0e-3
 systemDynamics = PackageDroneIdealDynamics(m_d, m_p, Id_cm, r_d, l, x_ref_, u_ref_)
 A, B = systemDynamics.get_jacobian(x_ref_, u_ref_)
@@ -41,13 +42,13 @@ C = np.array(
 
 lqr = lqr_controller(x_ref_, u_ref_, A, B, Ki)
 Kr = lqr.get_Kr_(A, B, Q, R)
-x_ = np.array([5, 0, 10, 0, 0.25 * np.pi - 1.0e-3, 0, 0 + 1.0e-3, 0])
+x_ = np.array([0, 0, 0, 0, 0.25 * np.pi - 1.0e-3, 0, 0 + 1.0e-3, 0])
 x_hat_ = np.array(
-    [5, 0, 10, 0, 0.25 * np.pi - 1.0e-3, 0, 0 + 1.0e-3, 0]
+    [0, 0, 0, 0, 0.25 * np.pi - 1.0e-3, 0, 0 + 1.0e-3, 0]
 )  # initial estmated x
 P = np.eye(8) * 0.1
 Q_noise = np.eye(8) * 0.001
-R_noise = np.diag([0.1, 0.1, 0.01])
+R_noise = np.diag([0.8**2, 0.1**2, 0.02**2])
 # main loop
 int_ = np.zeros_like(x_)
 steps = 20000
@@ -119,3 +120,6 @@ plot_drone_path(hist[:, 0], hist[:, 2])
 animator = DronePoleAnimator(hist, pole_length=systemDynamics.l)
 ani = animator.animate()
 animator.show()
+
+writer = FFMpegWriter(fps=30, metadata=dict(artist="PorhJ"), bitrate=1800)
+ani.save("media/drone_payload_simulation.mp4", writer=writer)

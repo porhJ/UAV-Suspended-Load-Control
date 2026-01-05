@@ -6,6 +6,9 @@
 
 This project investigates the dynamics and control of a planar quadrotor with a suspended payload, operating under nonlinear dynamics and limited sensing constraints. The system is modeled using first-principles dynamics and linearized around a hover equilibrium to facilitate the design of a Linear Quadratic Regulator (LQR) for trajectory tracking. An Extended Kalman Filter (EKF) is implemented to estimate the full system state from a minimal set of realistic measurements. To evaluate stability, robustness, and controller performance under non-ideal conditions, disturbances and sensor noise are injected directly into the nonlinear plant simulation.
 
+# Simulation Demo
+![demo gif](media/dron_payload_simulation.gif)
+
 
 # System modelling
 ## Coordinates and assumptions
@@ -448,20 +451,21 @@ The Naive approach is functionally useless for dynamic control, with velocity er
 
 # Acknowledgements and Resources
 This project was developed using the following resources, which provided essential theoretical foundations in control systems, state estimation, and dynamics:
-- [Control Bootcamp](https://youtube.com/playlist?list=PLMrJAkhIeNNR20Mz-VpzgfQs5zrYi085m) – *Prof. Steve Brunton*
+- [Control Bootcamp](https://youtube.com/playlist?list=PLMrJAkhIeNNR20Mz-VpzgfQs5zrYi085m) – *Prof. Steve Brunton* :
 Primary reference for control theory. This series served not only as a reference for this project but also as my main learning resource throughout its development.
-- [State-Space Control](https://youtube.com/playlist?list=PLfqhYmT4ggAtpuB1g8NbgH912PwYjn_We) – MATLAB Tech Talks – *Bryan Douglas* 
+- [State-Space Control](https://youtube.com/playlist?list=PLfqhYmT4ggAtpuB1g8NbgH912PwYjn_We) – MATLAB Tech Talks – *Bryan Douglas* :
 An early and highly accessible introduction to PID, LQR, and state-space control concepts. The explanations were particularly helpful in building intuition.
-- [MIT 6.8210: Underactuated Robotics](https://underactuated.csail.mit.edu) – *Prof. Russ Tedrake*
+- [MIT 6.8210: Underactuated Robotics](https://underactuated.csail.mit.edu) – *Prof. Russ Tedrake* :
 Primary resource for rigorous treatment of linearization, LQR, and nonlinear dynamics in underactuated systems.
-- [MIT 2.160: System Identification, Estimation, and Learning – Lecture 8](https://ocw.mit.edu/courses/2-160-identification-estimation-and-learning-spring-2006/5d7c37b93786ddb91cd913d1ab994848_lecture_8.pdf) – *Prof. Harry Asada*
+- [MIT 2.160: System Identification, Estimation, and Learning – Lecture 8](https://ocw.mit.edu/courses/2-160-identification-estimation-and-learning-spring-2006/5d7c37b93786ddb91cd913d1ab994848_lecture_8.pdf) – *Prof. Harry Asada* :
 Reference for the mathematical formulation and intuition behind the Extended Kalman Filter.
 - [Rigid Body Dynamics (Lagrangian Formulation)](https://ocw.mit.edu/courses/2-003j-dynamics-and-control-i-fall-2007/9a45c8a9cfbd2434989813431d6db1d4_lagrange.pdf
-) – *Prof. Sanjay Sarma*
+) – *Prof. Sanjay Sarma* :
 Reference for Lagrangian mechanics and generalized coordinates used in the system modeling.
 
 # AI Use Declaration
 Generative AI tools were used only for the following supportive tasks:
 - Generating code for routine tasks such as Matplotlib plotting code.
 - Refining grammar and wording in the README.
+
 All mathematical derivations, control design decisions, experimental methodology, and technical reasoning were independently developed and verified by me.
