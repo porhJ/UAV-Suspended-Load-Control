@@ -6,8 +6,10 @@
 
 This project investigates the dynamics and control of a planar quadrotor with a suspended payload, operating under nonlinear dynamics and limited sensing constraints. The system is modeled using first-principles dynamics and linearized around a hover equilibrium to facilitate the design of a Linear Quadratic Regulator (LQR) for trajectory tracking. An Extended Kalman Filter (EKF) is implemented to estimate the full system state from a minimal set of realistic measurements. To evaluate stability, robustness, and controller performance under non-ideal conditions, disturbances and sensor noise are injected directly into the nonlinear plant simulation.
 
+**[Please check the project one pager to get overview idea of the model and experiments!](suspended_payload_one_pager.pdf)**
+
 # Simulation Demo
-![demo gif](media/dron_payload_simulation.gif)
+![demo gif](media/drone_payload_simulation.gif)
 
 
 # System modelling
@@ -446,6 +448,17 @@ angular_velocity_p   |      0.776 |        9.976
 ### Conclusion
 The Naive approach is functionally useless for dynamic control, with velocity errors huge enough to crash the system immediately. The EKF successfully infers the hidden states (like payload swing velocity) with high accuracy, enabling stable flight.
 
+
+# How to Run
+1. Experiments & Analysis
+To generate performance graphs and run experimental data analysis, please use the provided Jupyter Notebooks.
+    Open the notebook files (perfect_drone_dance.ipynb) to view and execute the experiments.
+
+2. Simulation Animation
+    To visualize the system animation, execute the main script from the terminal:
+```bash
+python3 src/main.py
+```
 
 
 
