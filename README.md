@@ -4,7 +4,7 @@
 *Figure 1: High-level control/estimation loop. The nonlinear planar quadrotor + suspended payload model is simulated (environment). The model is linearized about an equilibrium (x̄, ū) to compute continuous-time LQR gains (A,B → solve ARE → K). The controller applies u = ū + K (x̂ − x̄). An EKF fuses noisy measurements (x, z, θ_d) with the nonlinear model to estimate the full state x̂_k, which is fed back to the controller. Disturbances and sensor noise are injected at the environment (w, v)*
         
 
-This project investigates the dynamics and control of a planar quadrotor with a suspended payload, operating under nonlinear dynamics and limited sensing constraints. The system is modeled using first-principles dynamics and linearized around a hover equilibrium to facilitate the design of a Linear Quadratic Regulator (LQR) for trajectory tracking. An Extended Kalman Filter (EKF) is implemented to estimate the full system state from a minimal set of realistic measurements. To evaluate stability, robustness, and controller performance under non-ideal conditions, disturbances and sensor noise are injected directly into the nonlinear plant simulation.
+This project is essentially an extended version of my previous project, ![Inverted Pendulum Under Rail Constraint](https://github.com/porhJ/inverted_pendulum.git). In this project, I will be investigating the dynamics and control of a **planar quadrotor with a suspended payload**, operating under nonlinear dynamics and limited sensing constraints. The system is modeled using first-principles dynamics and linearized around a hover equilibrium to facilitate the design of a Linear Quadratic Regulator (LQR) for trajectory tracking. An Extended Kalman Filter (EKF) is implemented to estimate the full system state from a minimal set of realistic measurements. To evaluate stability, robustness, and controller performance under non-ideal conditions, disturbances and sensor noise are injected directly into the nonlinear plant simulation.
 
 **[Please check the project one pager to get overview idea of the model and experiments!](suspended_payload_one_pager.pdf)**
 
@@ -128,7 +128,7 @@ $$R = \begin{bmatrix}R_{u_1} &  \\
 
 * $K_r$ is the optimal gain 1x8 matrix, 
 
-$$K_r = \begin{bmatrix}  k_1 & ... & k_8 \end{bmatrix}$$ 
+$$K_r = \begin{bmatrix}  k_1 & ... & k_8 \end{bmatrix}$$
 
 Unlike an inverted pendulum system where the equilibrium control input is often zero, a multirotor UAV requires a constant non-zero thrust to counteract gravity, even at a stable hover. Relying solely on the proportional feedback combined with the feed-forward equilibrium thrust can result in steady-state errors (oscillating) due to model uncertainties or unmodeled disturbances. To eliminate this offset, we introduce an integral action similar to that used in PID control.
 
