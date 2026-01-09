@@ -218,6 +218,8 @@ $\hat {\underline x}_k$ is what we will send to the controller!
 
 # Results
 
+All experimental results are reproducible through the [perfect_drone_dance.ipynb](perfect_drone_dance.ipynb)
+
 ## Overview & Experimental Setup
 The primary control objective is to reach the target coordinates while minimizing the payload swing ($\theta_p$). We define "settling" as the system maintaining the following state bounds for at least 20 seconds:
 
@@ -459,6 +461,14 @@ To generate performance graphs and run experimental data analysis, please use th
 ```bash
 python3 src/main.py
 ```
+
+
+# Future Work
+1. **Computational Optimization:**  
+   The current implementation computes Jacobians numerically at each timestep, which increases computational cost. This will be improved by deriving and implementing analytical (symbolic) Jacobians to reduce runtime and improve scalability.
+
+2. **Advanced State Estimation:**  
+   At present, the framework includes an Extended Kalman Filter (EKF). Future work will explore alternative nonlinear estimators, including the Unscented Kalman Filter (UKF) and particle-based filtering methods, to improve robustness under strong nonlinearities and non-Gaussian noise.
 
 
 
