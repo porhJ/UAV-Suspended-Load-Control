@@ -265,8 +265,8 @@ $$R_{noise} =
 Using our tuned "Baseline" Q and R matrices, the system performs robustly.
 
 $$
-Q_{baseline} = diag([25, 20, 25, 20, 15, 10, 30, 10]) \\
-R_{baseline} = diag([0.5, 0.5])
+Q_{baseline} = diag([50, 30, 50, 20, 30, 10, 60, 10]) \\
+R_{baseline} = diag([0.1, 0.1])
 $$
 
 ![baseline:true vs estimation](media/graphs/baseline/baseline_2vest.png)
@@ -279,10 +279,10 @@ $$
 *graph shows trajectory of the drone*
 
 ```
-Max package swing (degree):  39.81150426563668 
-Control Effort Motor 1: [4.37928378] 
-Control Effort Motor 2: [4.43946955] 
-Settling after: 5.258 seconds
+Max package swing (degree):  64.84588585660731
+Control Effort Motor 1: [7.45668961]
+Control Effort Motor 2: [7.47172792]
+Settling after: 11.428 seconds
 ```
 
 ## Failure case
